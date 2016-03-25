@@ -1,0 +1,33 @@
+A. PREP AND COMBINE SEQUENCE READS AND ASSIGN OTUS, CLUSTERS, AND TAXONOMY
+
+0. illumina demultiplexed files into separate folders with read1 and read2 .gz files representing both reads from paired end sequencing
+1. joined_paired_ends.py –m SeqPrep (join paired end reads together into a single file using SeqPrep method) → assembled.gz
+2. split_libraries_fastq.py (read in assembled.gz; remove short and low quality sequences, combine all sequences together) → seqs.fna
+3. identify_chimeric_seqs.py (identify chimeric sequences; input seqs.fna –m usearch61 –r gg_13_8_otus/rep_set/97_otus.fasta) → chimeras.txt
+4. filter_fasta.py –n (filter out chimeric sequences; input chimeras.txt and seqs.fna) → seqs_chimfilter.fna
+5. pick_open_reference_otus.py (define OTUs and cluster sequences; input seqs_chimfilter.fna; default settings with default singleton filtering and gg_13_8_otus 97_otus.fasta used for reference) → rep_set.fna, final_otu_map_mc2.txt
+6. assign_taxonomy (input rep_set.fna; default uclust method used for taxonomy assignment) → rep_set_tax_assignments.txt
+
+
+
+B. MANUALLY CURATE/BLAST UNASSIGNED CLUSTERS
+
+Steps 7-12 were done for the following keywords: “Unassigned”; “f__Enterobacteriaceae; g__; s__”; “f__Xanthomonadaceae; g__; s__”; and 	“f__Enterococcaceae; g__; s__”
+7. grabotus.pl (read in rep_set_tax_assignments.txt and match a user-defined keyword in each line – returns a list of OTU numbers) → otus.txt
+8. matchotus.pl (read in otus.txt and match with the corresponding sequence in rep.set.fna to output the otu and sequence in .fasta format) → otus.fasta
+9. remoteblast.pl (read in otus.fasta; for each sequence perform a blast search and return the top three hits in tab-delimited format) → hits.txt 
+10. parsefile.pl (read in hits.txt and summarizes blast hit data for manual user curation – see step 12) → hitSummary.txt
+11. hitSummary was edited manually as follows: all sequences that returned a known genus, greater than 80% average length of BLAST hits, and	>97% average identity were defined as the returned genus; sequences not satisfying those above three benchmarks were left unedited → editedHitSummary.txt
+12. changeGenus.pl (read in editedHitSummary.txt and use it to update genus information in rep_set_tax_assignments.txt) →	Edited_rep_set_tax_assignments.txt
+
+
+
+C. CREATE OTU TABLE WITH TAXONOMIC ASSIGNMENTS, FILTER
+
+13. make_otu_table.py (create the final .biome otu table with taxonomic assignments; input Edited_rep_set_tax_assign.txt and final_otu_map_mc2.txt) → otu_table.biom
+14. filter_taxa_from_otu_table.py –n c__Chloroplast, f__mitochondria (remove mitochondrial and chloroplast sequences from	otu.table.biom) → OTUtable_mc2_MCR.biom
+15. convert_biome.py –to-tsv –header-key taxonomy (input the .biom file from step 14, and convert files into tab delimitated file read by Microsoft Excel) → otu_table.txt
+16. In Excel, each row of the .biome table (corresponding to a unique taxon/cluster) was counted/summed across all experiments and ordered by this total from greatest number of sequences to least. Any cluster that had more than 100 sequences that was still taxonomically ambiguous 	(had not been resolved by the open_reference_picking or custom Perl scripts used above) was matched to a corresponding sequence and 	this sequence was manually BLASTed and taxonomy was assigned at the genus level using the criteria above (see step 9-11).
+17. As a note, clusters with <100 sequences (which were not manually BLASTed, made up ~ 0.93% of the total sequences in the dataset.
+18. Finally, any clusters with 20 or fewer sequences were deleted from the .biome table – this removed ~900 sequences or ~0.02% of the total number of sequences from the table.
+19. The table was exported from Excel as a comma-separated file and imported into Prism software where metadata were added manually to the resulting Figure.
