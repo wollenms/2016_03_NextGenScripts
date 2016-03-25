@@ -11,4 +11,6 @@ Scripts included in this repository, in the order they are used, are the followi
 
 3) 03_parsefile.pl
 
-NOTE - you will have to edit/modify at the very least scripts 00 & 01 to use them ... you may also need to install bioperl and modify 02 and 03 depending on your particular needs. 
+NOTES   A. you will have to edit/modify infile and search strings in scripts 00 & 01 to use them 
+        B. you will need to send the output of 01 and 02 to another .txt file when you use the script in your shell
+        B. you will need to install bioperl to run 02 and 03
